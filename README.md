@@ -1,168 +1,521 @@
-*# LoadSim*
+# LoadSim
 
+## Lightweight HTTP Load \& Latency Benchmarking System
 
+LoadSim is a high-concurrency HTTP benchmarking tool built in Go for measuring how HTTP endpoints behave under controlled load.
 
-*## Lightweight HTTP Load \& Latency Benchmarking System*
+It provides latency percentiles, throughput, status-code distribution, network-error analysis, controlled ramp-up, degradation detection, and automatic safety stopping when the configured 5xx threshold is exceeded.
 
+\---
 
+# 1\. Problem
 
-*LoadSim is a high-concurrency HTTP benchmarking tool built in Go for measuring how HTTP endpoints behave under controlled load.*
+Developers need a simple and reliable way to understand how an HTTP service behaves when request load increases.
 
+Traditional testing can make it difficult to quickly identify:
 
+* Latency degradation under load
+* Throughput limits
+* High-tail latency such as P99
+* HTTP 5xx failures
+* Network-level failures
+* The concurrency level where degradation begins
+* Whether an endpoint is becoming unstable
 
-*It provides latency percentiles, throughput, status-code distribution, network-error analysis, controlled ramp-up, degradation detection, and automatic safety stopping when the configured 5xx threshold is exceeded.*
+LoadSim addresses these problems with a lightweight Go-based benchmarking engine and an easy-to-use web dashboard.
 
+\---
 
+# 2\. Solution
 
-*---*
+LoadSim generates controlled HTTP traffic against a target endpoint and continuously collects performance metrics.
 
+The system supports:
 
+* Controlled concurrency
+* High-volume request workloads
+* HTTP keep-alive connection pooling
+* Concurrency ramp-up
+* Latency percentile calculation
+* Throughput measurement
+* HTTP status-code tracking
+* Network-error classification
+* 5xx safety monitoring
+* Degradation detection
+* JSON result reports
+* Browser-based monitoring
 
-*# 1. Problem*
+The same core benchmarking engine is used by both the CLI and web application.
 
+\---
 
+# 3\. Features
 
-*Developers need a simple and reliable way to understand how an HTTP service behaves when request load increases.*
+## High-Concurrency HTTP Engine
 
+* Supports up to 5,000 configured concurrent workers
+* Worker-pool based execution
+* Efficient HTTP transport
+* HTTP keep-alive connection reuse
+* Controlled request scheduling
 
+## Benchmark Metrics
 
-*Traditional testing can make it difficult to quickly identify:*
+LoadSim calculates:
 
+* P50 latency
+* P90 latency
+* P99 latency
+* Requests per second (RPS)
+* Total requests started
+* Total requests completed
+* Successful requests
+* Network errors
+* HTTP 5xx responses
+* HTTP status-code distribution
 
+## Controlled Ramp-Up
 
-*- Latency degradation under load*
+LoadSim can gradually increase concurrency instead of immediately applying maximum load.
 
-*- Throughput limits*
+Example:
 
-*- High-tail latency such as P99*
+```text
+100 → 500 → 1000 → 2000 → 3000 → 5000
+```
 
-*- HTTP 5xx failures*
+## Automatic Safety Stop
 
-*- Network-level failures*
+LoadSim monitors HTTP 5xx responses during a benchmark.
 
-*- The concurrency level where degradation begins*
+If the configured 5xx threshold is exceeded, the benchmark can stop automatically.
 
-*- Whether an endpoint is becoming unstable*
+Default threshold:
 
+```text
+10%
+```
 
+## Network Error Classification
 
-*LoadSim addresses these problems with a lightweight Go-based benchmarking engine and an easy-to-use web dashboard.*
+Network failures can be classified into categories including:
+
+* Timeout
+* Connection refused
+* Connection reset
+* DNS error
+* Resource limit
+* Cancelled request
+* Other
+
+## Degradation Detection
+
+LoadSim analyses benchmark behaviour using latency, throughput, and error information to identify significant performance degradation.
+
+## JSON Reports
+
+Benchmark results can be exported as JSON for analysis, documentation, and reproducibility.
+
+## Web Dashboard
+
+The browser dashboard provides:
+
+* Benchmark configuration
+* Live progress
+* Started requests
+* Completed requests
+* Active requests
+* Successful requests
+* Network errors
+* HTTP 5xx responses
+* P50 / P90 / P99 latency
+* RPS
+* HTTP status distribution
+* Network-error distribution
+* Safety status
+* Degradation status
+
+\---
+
+# 4\. Tech Stack
+
+## Backend
+
+* Go
+* Go `net/http`
+* Goroutines
+* HTTP Transport
+* Concurrent worker pools
+* Atomic counters
+* Context cancellation
+
+## Frontend
+
+* HTML5
+* CSS3
+* JavaScript
+* Fetch API
+
+## Development and Version Control
+
+* Git
+* GitHub
+* PowerShell
+* Go toolchain
+
+\---
+
+# 5\. Architecture
+
+```text
+                         ┌──────────────────────┐
+                         │    Web Dashboard     │
+                         │    HTML/CSS/JS       │
+                         └──────────┬───────────┘
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │      Go Web API      │
+                         │ Start / Status /     │
+                         │ Result / Stop        │
+                         └──────────┬───────────┘
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │    LoadSim Engine    │
+                         └──────────┬───────────┘
+                                    │
+              ┌─────────────────────┼─────────────────────┐
+              │                     │                     │
+              ▼                     ▼                     ▼
+      ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+      │ Ramp         │      │ Worker Pool  │      │ Safety       │
+      │ Controller   │      │              │      │ Controller   │
+      └──────────────┘      └──────┬───────┘      └──────────────┘
+                                   │
+                                   ▼
+                         ┌──────────────────────┐
+                         │ HTTP Transport       │
+                         │ Keep-Alive Pool      │
+                         └──────────┬───────────┘
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │ Target HTTP Endpoint │
+                         └──────────┬───────────┘
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │   Metrics Engine     │
+                         │ P50 / P90 / P99      │
+                         │ RPS / Status / Error │
+                         └──────────┬───────────┘
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │ Degradation Detector │
+                         │ + JSON Reporter      │
+                         └──────────────────────┘
+```
+
+\---
+
+# 6\. Project Structure
+
+```text
+LoadSim/
+├── cmd/
+│   ├── loadsim/
+│   │   └── main.go
+│   └── loadsim-web/
+│       └── main.go
+├── internal/
+│   └── engine/
+│       └── engine.go
+├── testserver/
+│   └── main.go
+├── web/
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
+├── final-50k-report.json
+├── final-ramp-report-v4.json
+├── safety-report.json
+├── go.mod
+├── .gitignore
+└── README.md
+```
+
+\---
+
+# 7\. Setup
+
+## Requirements
+
+* Go 1.20 or newer
+* Git
+* Windows, Linux, or macOS
+
+Clone the repository:
+
+```bash
+git clone https://github.com/abdulkhadar81700-jpg/LoadSim.git
+cd LoadSim
+```
 
+Verify the Go installation:
 
+```bash
+go version
+```
 
-*---*
+Run the project tests:
 
+```bash
+go test ./...
+```
 
+\---
 
-*# 2. Solution*
+# 8\. Environment Variables
 
+The current local demonstration does not require API keys, passwords, or external credentials.
 
+Local services use:
 
-*LoadSim generates controlled HTTP traffic against a target endpoint and continuously collects performance metrics.*
+```text
+Web Dashboard / API: 127.0.0.1:8090
+Test Server:         127.0.0.1:8080
+```
 
+No private credentials are stored in the repository.
 
+\---
 
-*The system supports:*
+# 9\. Run Instructions
 
+## Step 1 — Start the Test Server
 
+From the project root:
 
-*- Controlled concurrency*
+```bash
+go run ./testserver
+```
 
-*- High-volume request workloads*
+The test server runs on:
 
-*- HTTP keep-alive connection pooling*
+```text
+http://127.0.0.1:8080
+```
 
-*- Concurrency ramp-up*
+Available endpoints:
 
-*- Latency percentile calculation*
+```text
+/fast
+/slow
+/unstable
+```
 
-*- Throughput measurement*
+### Fast endpoint
 
-*- HTTP status-code tracking*
+`/fast` returns a fast HTTP 200 response and is useful for throughput testing.
 
-*- Network-error classification*
+### Slow endpoint
 
-*- 5xx safety monitoring*
+`/slow` introduces an artificial response delay and is useful for demonstrating latency behaviour.
 
-*- Degradation detection*
+### Unstable endpoint
 
-*- JSON result reports*
+`/unstable` generates controlled HTTP 500 responses for demonstrating the safety-stop mechanism.
 
-*- Browser-based monitoring*
+## Step 2 — Run the CLI
 
+Example:
 
+```bash
+go run ./cmd/loadsim -url http://127.0.0.1:8080/fast -concurrency 100 -requests 50000 -duration 10
+```
 
-*The same core benchmarking engine is used by both the CLI and web application.*
+## Step 3 — Run a Ramp-Up Benchmark
 
+```bash
+go run ./cmd/loadsim -url http://127.0.0.1:8080/fast -concurrency 5000 -requests 50000 -duration 10 -ramp-up 10
+```
 
+## Step 4 — Generate a JSON Report
 
-*---*
+```bash
+go run ./cmd/loadsim -url http://127.0.0.1:8080/fast -concurrency 100 -requests 50000 -json report.json
+```
 
+## Step 5 — Start the Web Dashboard
 
+```bash
+go run ./cmd/loadsim-web
+```
 
-*# 3. Features*
+Open:
 
+```text
+http://127.0.0.1:8090/
+```
 
+The web dashboard communicates with the Go backend, which invokes the same LoadSim engine used by the CLI.
 
-*## High-Concurrency HTTP Engine*
+\---
 
+# 10\. Demo Link
 
+## GitHub Repository
 
-*- Supports up to 5,000 configured concurrent workers*
+https://github.com/abdulkhadar81700-jpg/LoadSim
 
-*- Worker-pool based execution*
+## Local Demo
 
-*- Efficient HTTP transport*
+```text
+http://127.0.0.1:8090/
+```
 
-*- HTTP keep-alive connection reuse*
+## Live Demo
 
-*- Controlled request scheduling*
+A public deployment URL can be added here if a cloud deployment is created.
 
+```text
+LIVE DEMO: TO BE ADDED
+```
 
+\---
 
-*## Benchmark Metrics*
+# 11\. Team Members
 
+## LoadSim Team
 
+|Name|Role|
+|-|-|
+|Shaik Abdulkhadar|Team Lead / System \& Backend Development|
+|U. Harshitha|Team Member|
+|S. Jayasri|Team Member|
+|Ch. V. Kotti Reddy|Team Member|
 
-*LoadSim calculates:*
+\---
 
+# 12\. Known Limitations
 
+* The current web API restricts benchmark targets to localhost/loopback addresses for the demonstration environment.
+* Very high concurrency can be affected by operating-system, CPU, memory, socket, and target-server limitations.
+* Network-error behaviour can vary between operating systems and environments.
+* Benchmark results depend on the hardware and target environment.
+* Benchmark measurements should not be interpreted as universal server-capacity guarantees.
+* The current implementation focuses on HTTP benchmarking rather than distributed multi-machine load generation.
+* A public hosted benchmarking service would require additional security controls before allowing arbitrary external targets.
 
-*- P50 latency*
+\---
 
-*- P90 latency*
+# 13\. AI / Tool Disclosure
 
-*- P99 latency*
+AI-assisted development tools were used during the project for permitted development activities including:
 
-*- Requests per second (RPS)*
+* Brainstorming
+* Architecture discussion
+* Technical explanations
+* Code suggestions
+* Debugging
+* Testing assistance
+* Documentation
+* Troubleshooting
 
-*- Total requests started*
+AI-generated suggestions were reviewed and tested during development.
 
-*- Total requests completed*
+The team is responsible for understanding the submitted architecture, source code, implementation decisions, testing process, and benchmark results.
 
-*- Successful requests*
+No private passwords, API keys, or sensitive credentials are included in the repository.
 
-*- Network errors*
+\---
 
-*- HTTP 5xx responses*
+# Benchmark Evidence
 
-*- HTTP status-code distribution*
+LoadSim was tested using a local HTTP test server.
 
+## 50,000 Request Benchmark
 
+Example recorded benchmark:
 
-*## Controlled Ramp-Up*
+```text
+Target:              http://127.0.0.1:8080/fast
+Concurrency:         100
+Requests:            50,000
+Started:             50,000
+Completed:           50,000
+Successful:          50,000
+Network Errors:      0
+5xx Responses:       0
 
+RPS:                 9,273.29
 
+P50:                 3.4469 ms
+P90:                 22.784 ms
+P99:                 126.3931 ms
 
-*LoadSim can gradually increase concurrency instead of immediately applying maximum load.*
+Network Error Rate:  0%
+```
 
+The JSON benchmark report is stored in:
 
+```text
+final-50k-report.json
+```
 
-*Example:*
+Additional benchmark reports:
 
+```text
+final-ramp-report-v4.json
+safety-report.json
+```
 
+These are measurements from the development environment. Results can vary depending on hardware, operating system, target server, and network conditions.
 
-*```text*
+\---
 
-*100 → 500 → 1000 → 2000 → 3000 → 5000*
+# Safety Demonstration
+
+The `/unstable` test endpoint is included to demonstrate LoadSim's safety system.
+
+When the configured HTTP 5xx threshold is exceeded, LoadSim can stop the benchmark.
+
+This demonstrates that the system monitors target health while generating load.
+
+\---
+
+# Testing
+
+Run the complete Go test suite:
+
+```bash
+go test ./...
+```
+
+The project contains:
+
+```text
+cmd/loadsim
+cmd/loadsim-web
+internal/engine
+testserver
+```
+
+\---
+
+# Repository
+
+GitHub:
+
+https://github.com/abdulkhadar81700-jpg/LoadSim
+
+\---
+
+# License
+
+MIT
+
+
 
