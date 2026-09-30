@@ -217,6 +217,59 @@ func validateRequest(req BenchmarkRequest) error {
 		return fmt.Errorf("invalid URL")
 	}
 
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return fmt.Errorf("URL must use http or https")
+	}
+
+	if parsed.Hostname() == "" {
+		return fmt.Errorf("invalid URL hostname")
+	}
+
+	// Allow local HTTP targets and HTTPS targets.
+	// HTTPS is required for external/public targets.
+	if parsed.Scheme == "http" {
+		host := parsed.Hostname()
+		ip := net.ParseIP(host)
+
+		if host != "localhost" &&
+			host != "127.0.0.1" &&
+			host != "::1" &&
+			(ip == nil || !ip.IsLoopback()) {
+			return fmt.Errorf("external targets must use HTTPS")
+		}
+	}
+
+	if req.Concurrency < 1 || req.Concurrency > 5000 {
+		return fmt.Errorf("concurrency must be between 1 and 5000")
+	}
+
+	if req.Requests < 1 || req.Requests > 1000000 {
+		return fmt.Errorf("requests must be between 1 and 1000000")
+	}
+
+	if req.Duration < 1 || req.Duration > 600 {
+		return fmt.Errorf("duration must be between 1 and 600 seconds")
+	}
+
+	if req.Max5xx < 0 || req.Max5xx > 100 {
+		return fmt.Errorf("max5xx must be between 0 and 100")
+	}
+
+	if req.RampUp < 0 || req.RampUp > 600 {
+		return fmt.Errorf("rampUp must be between 0 and 600 seconds")
+	}
+
+	return nil
+}
+	if req.URL == "" {
+		return fmt.Errorf("URL is required")
+	}
+
+	parsed, err := url.ParseRequestURI(req.URL)
+	if err != nil {
+		return fmt.Errorf("invalid URL")
+	}
+
 	host := parsed.Hostname()
 
 	if host == "" {
