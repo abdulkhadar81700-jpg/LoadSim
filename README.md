@@ -252,9 +252,9 @@ LoadSim/
 
 ## Requirements
 
-* Go 1.20 or newer
+* Go 1.20
 * Git
-* Windows, Linux, or macOS
+* Windows
 
 Clone the repository:
 
