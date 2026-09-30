@@ -1,0 +1,22 @@
+{
+  "tool": "LoadSim",
+  "version": "1.0",
+  "target": "http://localhost:8080/fast",
+  "concurrency": 100,
+  "duration": "5.392s",
+  "requested_requests": 50000,
+  "started": 50000,
+  "completed": 50000,
+  "successful": 50000,
+  "network_errors": 0,
+  "status_5xx": 0,
+  "rps": 9273.292326463734,
+  "p50": "3.4469ms",
+  "p90": "22.784ms",
+  "p99": "126.3931ms",
+  "status_codes": {
+    "200": 50000
+  },
+  "network_errors_by_type": {},
+  "stages": null
+}

@@ -1,0 +1,21 @@
+# Go build files
+*.exe
+*.test
+*.out
+
+# Build directories
+bin/
+dist/
+
+# IDE/editor files
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary benchmark reports
+ramp-report-v3.json
+final-ramp-report.json

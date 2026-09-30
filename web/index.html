@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>LoadSim — HTTP Load & Latency Benchmark</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-mark">LS</div>
+            <div>
+                <div class="brand-name">LoadSim</div>
+                <div class="brand-subtitle">HTTP Load & Latency Benchmark</div>
+            </div>
+        </div>
+
+        <div class="connection">
+            <span class="status-dot"></span>
+            <span id="connectionStatus">Backend checking...</span>
+        </div>
+    </header>
+
+
+    <main class="container">
+
+        <!-- HERO -->
+
+        <section class="hero">
+            <div class="eyebrow">SYSTEMS / NETWORKING</div>
+
+            <h1>
+                Measure HTTP performance
+                <span>under real concurrency.</span>
+            </h1>
+
+            <p class="hero-text">
+                LoadSim is a lightweight high-concurrency HTTP benchmarking
+                engine designed to measure latency, throughput, failures,
+                and degradation safely.
+            </p>
+
+            <div class="hero-badges">
+                <span>Up to 5,000 concurrency</span>
+                <span>50K+ requests</span>
+                <span>p50 / p90 / p99</span>
+                <span>Safety stop</span>
+            </div>
+        </section>
+
+
+        <!-- BENCHMARK CONTROL -->
+
+        <section class="panel">
+
+            <div class="section-heading">
+                <div>
+                    <div class="section-label">BENCHMARK CONTROL</div>
+                    <h2>Configure a test</h2>
+                </div>
+
+                <div id="jobState" class="state idle">
+                    IDLE
+                </div>
+            </div>
+
+
+            <div class="form-grid">
+
+                <div class="field field-wide">
+                    <label for="targetUrl">Target URL</label>
+
+                    <input
+                        id="targetUrl"
+                        type="url"
+                        value="http://127.0.0.1:8080/fast"
+                        placeholder="http://127.0.0.1:8080/fast"
+                    >
+
+                    <small>
+                        For the local demo, use a localhost/loopback endpoint.
+                    </small>
+                </div>
+
+
+                <div class="field">
+                    <label for="concurrency">Concurrency</label>
+
+                    <input
+                        id="concurrency"
+                        type="number"
+                        min="1"
+                        max="5000"
+                        value="100"
+                    >
+
+                    <small>Maximum: 5,000</small>
+                </div>
+
+
+                <div class="field">
+                    <label for="requests">Requests</label>
+
+                    <input
+                        id="requests"
+                        type="number"
+                        min="0"
+                        max="1000000"
+                        value="50000"
+                    >
+
+                    <small>0 = unlimited</small>
+                </div>
+
+
+                <div class="field">
+                    <label for="duration">Duration</label>
+
+                    <input
+                        id="duration"
+                        type="text"
+                        value="10s"
+                        placeholder="10s"
+                    >
+
+                    <small>Examples: 10s, 30s, 1m</small>
+                </div>
+
+
+                <div class="field">
+                    <label for="max5xx">Max 5xx %</label>
+
+                    <input
+                        id="max5xx"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value="10"
+                    >
+
+                    <small>Automatic safety stop</small>
+                </div>
+
+
+                <div class="field">
+                    <label for="rampUp">Ramp-up seconds</label>
+
+                    <input
+                        id="rampUp"
+                        type="number"
+                        min="0"
+                        max="600"
+                        value="0"
+                    >
+
+                    <small>0 = fixed concurrency</small>
+                </div>
+
+            </div>
+
+
+            <div class="controls">
+
+                <button
+                    id="runButton"
+                    class="button primary"
+                    onclick="startBenchmark()"
+                >
+                    Run Benchmark
+                </button>
+
+                <button
+                    id="stopButton"
+                    class="button danger"
+                    onclick="stopBenchmark()"
+                    disabled
+                >
+                    Stop Benchmark
+                </button>
+
+            </div>
+
+
+            <div id="errorBox" class="error-box hidden"></div>
+
+        </section>
+
+
+        <!-- LIVE PROGRESS -->
+
+        <section class="panel">
+
+            <div class="section-heading">
+                <div>
+                    <div class="section-label">LIVE EXECUTION</div>
+                    <h2>Benchmark progress</h2>
+                </div>
+
+                <div id="progressPercent">
+                    0%
+                </div>
+            </div>
+
+
+            <div class="progress-track">
+                <div
+                    id="progressBar"
+                    class="progress-bar"
+                    style="width: 0%"
+                ></div>
+            </div>
+
+
+            <div class="progress-grid">
+
+                <div class="mini-stat">
+                    <span>Started</span>
+                    <strong id="started">0</strong>
+                </div>
+
+                <div class="mini-stat">
+                    <span>Completed</span>
+                    <strong id="completed">0</strong>
+                </div>
+
+                <div class="mini-stat">
+                    <span>Active</span>
+                    <strong id="active">0</strong>
+                </div>
+
+                <div class="mini-stat">
+                    <span>Successful</span>
+                    <strong id="successful">0</strong>
+                </div>
+
+                <div class="mini-stat">
+                    <span>Network Errors</span>
+                    <strong id="networkErrors">0</strong>
+                </div>
+
+                <div class="mini-stat">
+                    <span>5xx</span>
+                    <strong id="status5xx">0</strong>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- PERFORMANCE METRICS -->
+
+        <section class="metrics-grid">
+
+            <div class="metric-card">
+                <div class="metric-label">P50 LATENCY</div>
+                <div id="p50" class="metric-value">—</div>
+                <div class="metric-description">
+                    Median request latency
+                </div>
+            </div>
+
+
+            <div class="metric-card">
+                <div class="metric-label">P90 LATENCY</div>
+                <div id="p90" class="metric-value">—</div>
+                <div class="metric-description">
+                    90th percentile
+                </div>
+            </div>
+
+
+            <div class="metric-card">
+                <div class="metric-label">P99 LATENCY</div>
+                <div id="p99" class="metric-value">—</div>
+                <div class="metric-description">
+                    Tail latency
+                </div>
+            </div>
+
+
+            <div class="metric-card">
+                <div class="metric-label">THROUGHPUT</div>
+                <div id="rps" class="metric-value">—</div>
+                <div class="metric-description">
+                    Requests per second
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- RESULT SUMMARY -->
+
+        <section class="panel">
+
+            <div class="section-heading">
+                <div>
+                    <div class="section-label">RESULT SUMMARY</div>
+                    <h2>System behaviour</h2>
+                </div>
+
+                <div id="resultBadge" class="result-badge">
+                    Waiting
+                </div>
+            </div>
+
+
+            <div class="summary-grid">
+
+                <div>
+                    <span>Target</span>
+                    <strong id="resultTarget">—</strong>
+                </div>
+
+                <div>
+                    <span>Concurrency</span>
+                    <strong id="resultConcurrency">—</strong>
+                </div>
+
+                <div>
+                    <span>Requests</span>
+                    <strong id="resultRequests">—</strong>
+                </div>
+
+                <div>
+                    <span>Elapsed</span>
+                    <strong id="resultDuration">—</strong>
+                </div>
+
+                <div>
+                    <span>Network error rate</span>
+                    <strong id="networkErrorRate">—</strong>
+                </div>
+
+                <div>
+                    <span>Safety stop</span>
+                    <strong id="safetyStop">—</strong>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- STATUS DISTRIBUTION -->
+
+        <section class="two-column">
+
+            <div class="panel">
+
+                <div class="section-label">HTTP STATUS</div>
+
+                <h2>Status distribution</h2>
+
+                <div id="statusDistribution" class="distribution">
+                    No results yet.
+                </div>
+
+            </div>
+
+
+            <div class="panel">
+
+                <div class="section-label">NETWORK ERRORS</div>
+
+                <h2>Error distribution</h2>
+
+                <div id="errorDistribution" class="distribution">
+                    No errors.
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- SAFETY -->
+
+        <section id="safetyPanel" class="panel safety-panel">
+
+            <div class="section-label">SAFETY & DEGRADATION</div>
+
+            <h2 id="safetyTitle">
+                Safety system ready
+            </h2>
+
+            <p id="safetyMessage">
+                LoadSim automatically stops the benchmark when the configured
+                5xx threshold is exceeded.
+            </p>
+
+        </section>
+
+
+        <!-- ARCHITECTURE -->
+
+        <section class="panel">
+
+            <div class="section-label">SYSTEM ARCHITECTURE</div>
+
+            <h2>One reusable benchmark engine</h2>
+
+            <div class="architecture">
+
+                <div class="architecture-node">
+                    <strong>Web UI</strong>
+                    <span>Controls & metrics</span>
+                </div>
+
+                <div class="arrow">→</div>
+
+                <div class="architecture-node">
+                    <strong>HTTP API</strong>
+                    <span>Start / status / result / stop</span>
+                </div>
+
+                <div class="arrow">→</div>
+
+                <div class="architecture-node highlight">
+                    <strong>LoadSim Engine</strong>
+                    <span>Concurrency + metrics + safety</span>
+                </div>
+
+                <div class="arrow">→</div>
+
+                <div class="architecture-node">
+                    <strong>HTTP Target</strong>
+                    <span>Real endpoint</span>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- CAPABILITIES -->
+
+        <section class="panel">
+
+            <div class="section-label">ENGINE CAPABILITIES</div>
+
+            <h2>Built for high-concurrency testing</h2>
+
+            <div class="capabilities">
+
+                <div>
+                    <strong>5,000</strong>
+                    <span>maximum configured concurrency</span>
+                </div>
+
+                <div>
+                    <strong>50K+</strong>
+                    <span>request-scale validation</span>
+                </div>
+
+                <div>
+                    <strong>P99</strong>
+                    <span>tail latency analysis</span>
+                </div>
+
+                <div>
+                    <strong>10%</strong>
+                    <span>default 5xx safety threshold</span>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- FOOTER -->
+
+        <footer>
+            <div>
+                LoadSim · HTTP Performance Engineering
+            </div>
+
+            <div>
+                Built with Go · REST API · Browser UI
+            </div>
+        </footer>
+
+    </main>
+
+
+    <script src="app.js"></script>
+
+</body>
+</html>

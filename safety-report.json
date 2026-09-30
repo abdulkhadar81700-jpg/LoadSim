@@ -1,0 +1,25 @@
+{
+  "tool": "LoadSim",
+  "version": "1.0",
+  "target": "http://localhost:8080/unstable",
+  "concurrency": 100,
+  "duration": "25ms",
+  "requested_requests": 0,
+  "started": 109,
+  "completed": 109,
+  "successful": 10,
+  "network_errors": 97,
+  "status_5xx": 2,
+  "rps": 4318.541996830428,
+  "p50": "22.4326ms",
+  "p90": "23.4392ms",
+  "p99": "23.4392ms",
+  "status_codes": {
+    "200": 10,
+    "500": 2
+  },
+  "network_errors_by_type": {
+    "canceled": 97
+  },
+  "stages": null
+}
